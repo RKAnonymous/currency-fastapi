@@ -24,7 +24,7 @@ async def index(db: AsyncSession = Depends(get_session)):
     return [d.__dict__ for d in currency.scalars().all()]
 
 
-@app.post("/update-rates", status_code=status.HTTP_200_OK)
+@app.get("/update-rates", status_code=status.HTTP_200_OK)
 async def update_rates(db: AsyncSession = Depends(get_session)):
     based_on = settings.CURRENCY_CODES[
         : settings.BASE_CURRENCY_LIMIT

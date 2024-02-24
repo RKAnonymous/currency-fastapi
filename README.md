@@ -21,3 +21,16 @@
 
 Initial data was set in the first alembic migration file.
 As soon as docker compose runs the seeded data is being inserted into database.
+
+
+### Endpoints
+
+    +-----------------+------------+---------------------------------------------------------------------+
+    |       URL       |   METHOD   |                                    DESCRIPTION                      |
+    +-----------------+------------+---------------------------------------------------------------------+
+    |  /update-rates  |     GET    |    Save last updated currency exchange rates into database          |
+    +-----------------+------------+---------------------------------------------------------------------+
+    |  /last-update   |     GET    |    Return last updated datetime from database                       |
+    +-----------------+------------+---------------------------------------------------------------------+
+    |  /convert       |     GET    |    Convert given value from source currency to target               |
+    +-----------------+------------+---------------------------------------------------------------------+
