@@ -1,3 +1,4 @@
+import asyncpg
 from config.settings import get_settings
 from sqlalchemy.orm import declarative_base
 from typing import AsyncGenerator
@@ -18,7 +19,7 @@ async def get_session() -> AsyncGenerator:
     session = SessionLocal()
     try:
         yield session
-    except Exception as exc:
+    except asyncpg.PostgresError as exc:
         print(exc.args)
         await session.rollback()
     finally:
