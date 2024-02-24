@@ -2,16 +2,11 @@ from config.settings import get_settings
 from sqlalchemy.orm import declarative_base
 from typing import AsyncGenerator
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
+from sqlalchemy.pool import NullPool
 
 settings = get_settings()
 
-engine = create_async_engine(
-    settings.DATABASE_URI,
-    pool_pre_ping=True,
-    pool_recycle=3600,
-    pool_size=20,
-    max_overflow=0,
-)
+engine = create_async_engine(settings.DATABASE_URI, poolclass=NullPool)
 
 SessionLocal = async_sessionmaker(bind=engine, autocommit=False, autoflush=False)
 Base = declarative_base()

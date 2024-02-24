@@ -6,7 +6,6 @@ services:
     container_name: currency_database
     volumes:
       - postgres_data:/var/lib/postgresql/data/
-      - ./docker_postgres_init.sql:/docker-entrypoint-initdb.d/docker_postgres_init.sql
     restart: always
     environment:
       - POSTGRES_USER=kamol

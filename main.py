@@ -1,5 +1,4 @@
 import requests
-import asyncio
 from fastapi import FastAPI, status, Depends
 from fastapi.responses import JSONResponse
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -27,15 +26,16 @@ async def index(db: AsyncSession = Depends(get_session)):
 
 @app.post("/update-rates", status_code=status.HTTP_200_OK)
 async def update_rates(db: AsyncSession = Depends(get_session)):
-    based_on = settings.CURRENCY_CODES[:5]  # Request limit 10/min
+    based_on = settings.CURRENCY_CODES[
+        : settings.BASE_CURRENCY_LIMIT
+    ]  # Request limit 10/min
     url = settings.SOURCE_URL
 
     for base_currency in based_on:
-        settings.CURRENCY_CODES.remove(base_currency)
         params = {
             "apikey": settings.API_KEY,
             "base_currency": base_currency,
-            "currencies": ",".join(settings.CURRENCY_CODES)
+            "currencies": ",".join(settings.CURRENCY_CODES),
         }
         response = await to_thread(requests.get, url, params, timeout=5, delay=0.5)
 
@@ -78,7 +78,10 @@ async def last_update(db: AsyncSession = Depends(get_session)):
         select(Currency).order_by(Currency.last_update.desc()).limit(1)
     )
     updated_at = currency.scalar_one().last_update
-    return updated_at
+    return JSONResponse(
+        content={"last_update": updated_at.strftime("%D-%m-%y %H:%M:%S")},
+        status_code=status.HTTP_200_OK,
+    )
 
 
 @app.get("/convert")
@@ -88,9 +91,12 @@ async def conversion(
     source: str = "USD",
     db: AsyncSession = Depends(get_session),
 ):
+    source = source.upper()
+    target = target.upper()
+
     rate_query = await db.execute(
         select(Meta)
-        .filter(Currency.base == source.upper(), Meta.code == target.upper())
+        .filter(Currency.base == source, Meta.code == target)
         .join(Currency, Meta.currency_id == Currency.id)
         .order_by(Currency.last_update.desc())
         .limit(1)
@@ -99,8 +105,18 @@ async def conversion(
     rate = rate_query.scalar_one_or_none()
 
     if not rate:
+        base_currencies = await db.execute(
+            select(Currency)
+            .order_by(Currency.last_update.desc())
+            .limit(settings.BASE_CURRENCY_LIMIT)
+        )
+        available_options = [cur.base for cur in base_currencies.scalars().all()]
+
         return JSONResponse(
-            content={"message": "Object not found."},
+            content={
+                "message": "Data not found. Try with another currency",
+                "option": available_options,
+            },
             status_code=status.HTTP_404_NOT_FOUND,
         )
 
@@ -109,7 +125,7 @@ async def conversion(
             "from": source,
             "to": target,
             "value": amount,
-            "result": rate.rate * amount,
+            "converted_value": rate.rate * amount,
         },
         status_code=status.HTTP_200_OK,
     )

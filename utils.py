@@ -12,7 +12,7 @@ async def to_thread(func, /, *args, **kwargs):
     separate thread.
     Return a coroutine that can be awaited to get the eventual result of *func*.
     """
-    await asyncio.sleep(kwargs.pop('delay', 1))
+    await asyncio.sleep(kwargs.pop("delay", 1))
     loop = events.get_running_loop()
     ctx = contextvars.copy_context()
     func_call = functools.partial(ctx.run, func, *args, **kwargs)
