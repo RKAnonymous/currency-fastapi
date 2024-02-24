@@ -8,9 +8,9 @@ services:
       - postgres_data:/var/lib/postgresql/data/
     restart: always
     environment:
-      - POSTGRES_USER=kamol
-      - POSTGRES_PASSWORD=my_password
-      - POSTGRES_DB=currency_db
+      - POSTGRES_USER=${SQL_USER}
+      - POSTGRES_PASSWORD=${SQL_PASSWORD}
+      - POSTGRES_DB=${SQL_DB}
     networks:
       action_detector_web_net:
         ipv4_address: 172.10.0.10

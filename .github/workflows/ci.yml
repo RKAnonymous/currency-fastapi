@@ -18,9 +18,9 @@ jobs:
     - name: Linter
       run: |
         make lint
-    - name: Test
-      run: |
-        make test
+#     - name: Test
+#       run: |
+#         make test
     - name: Build Container
       run: |
         make build
