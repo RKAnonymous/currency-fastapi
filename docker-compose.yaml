@@ -1,0 +1,39 @@
+version: "3"
+
+services:
+  db:
+    image: postgres:15
+    container_name: currency_database
+    volumes:
+      - postgres_data:/var/lib/postgresql/data/
+    environment:
+      - POSTGRES_USER=kamol
+      - POSTGRES_PASSWORD=my_password
+      - POSTGRES_DB=currency_db
+    networks:
+      action_detector_web_net:
+        ipv4_address: 172.10.0.10
+  api:
+    build: .
+    container_name: currency_backend
+    command: bash -c "alembic upgrade head && uvicorn main:app --host 0.0.0.0 --port 8000 --reload"
+    volumes:
+      - .:/app
+    ports:
+      - "8000:8000"
+    depends_on:
+      - db
+    networks:
+      action_detector_web_net:
+        ipv4_address: 172.10.0.5
+
+volumes:
+  postgres_data:
+
+networks:
+  action_detector_web_net:
+    ipam:
+      driver: default
+      config:
+        - subnet: 172.10.0.0/16
+          gateway: 172.10.0.1
