@@ -6,6 +6,8 @@ services:
     container_name: currency_database
     volumes:
       - postgres_data:/var/lib/postgresql/data/
+      - ./docker_postgres_init.sql:/docker-entrypoint-initdb.d/docker_postgres_init.sql
+    restart: always
     environment:
       - POSTGRES_USER=kamol
       - POSTGRES_PASSWORD=my_password
@@ -19,6 +21,7 @@ services:
     command: bash -c "alembic upgrade head && uvicorn main:app --host 0.0.0.0 --port 8000 --reload"
     volumes:
       - .:/app
+    restart: always
     ports:
       - "8000:8000"
     depends_on:

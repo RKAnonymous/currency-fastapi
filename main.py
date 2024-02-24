@@ -1,4 +1,5 @@
 import requests
+import asyncio
 from fastapi import FastAPI, status, Depends
 from fastapi.responses import JSONResponse
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -6,7 +7,7 @@ from sqlalchemy.future import select
 from config.settings import get_settings
 from config.database import get_session
 from models import Currency, Meta
-
+from utils import to_thread
 
 settings = get_settings()
 
@@ -26,16 +27,17 @@ async def index(db: AsyncSession = Depends(get_session)):
 
 @app.post("/update-rates", status_code=status.HTTP_200_OK)
 async def update_rates(db: AsyncSession = Depends(get_session)):
-    based_on = ["USD"]  # settings.CURRENCY_CODES
+    based_on = settings.CURRENCY_CODES[:5]  # Request limit 10/min
     url = settings.SOURCE_URL
 
     for base_currency in based_on:
+        settings.CURRENCY_CODES.remove(base_currency)
         params = {
             "apikey": settings.API_KEY,
             "base_currency": base_currency,
-            "currencies": "EUR,CAD,CHF",  # settings.CURRENCY_CODES
+            "currencies": ",".join(settings.CURRENCY_CODES)
         }
-        response = requests.get(url, params, timeout=5)
+        response = await to_thread(requests.get, url, params, timeout=5, delay=0.5)
 
         if response.status_code != 200:
             return JSONResponse(
@@ -65,8 +67,8 @@ async def update_rates(db: AsyncSession = Depends(get_session)):
         await db.commit()
 
     return JSONResponse(
-        content={"message": "Rates update started"},
-        status_code=status.HTTP_202_ACCEPTED,
+        content={"message": "Rates updated."},
+        status_code=status.HTTP_200_OK,
     )
 
 
@@ -88,7 +90,7 @@ async def conversion(
 ):
     rate_query = await db.execute(
         select(Meta)
-        .filter(Currency.base == source, Meta.code == target)
+        .filter(Currency.base == source.upper(), Meta.code == target.upper())
         .join(Currency, Meta.currency_id == Currency.id)
         .order_by(Currency.last_update.desc())
         .limit(1)
